@@ -16,13 +16,13 @@ The project uses a Bronze → Silver → Gold architecture and includes:
 
 ## Labs that are done: 
 
-Lab 1: Project Setup + Folder Structure
-Lab 2: Calling the Weather API + Error Handling
-Lab 3: Data Cleaning + Transformations
-Lab 4: Converting CSV to Parquet
-Lab 5: Loading Data into a SQL Database
-Lab 6: Logging (the thing engineers use daily)
-Lab 7: Config Files (your future best friend)
-Lab 8: Pipeline Runner (your first mini Aiflow DAG)
-Lab 9: Scheduling Your Pipeline
+Lab 1: Project Setup + Folder Structure  
+Lab 2: Calling the Weather API + Error Handling  
+Lab 3: Data Cleaning + Transformations  
+Lab 4: Converting CSV to Parquet  
+Lab 5: Loading Data into a SQL Database  
+Lab 6: Logging (the thing engineers use daily)  
+Lab 7: Config Files (your future best friend)  
+Lab 8: Pipeline Runner (your first mini Aiflow DAG)  
+Lab 9: Scheduling Your Pipeline  
 Conclusion: Future dashboards + final thoughts
