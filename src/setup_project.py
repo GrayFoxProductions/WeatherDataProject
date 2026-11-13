@@ -1,4 +1,7 @@
 # This python file simply does the early steps of creating folders in Github.
+# 1) Recreate the full project directory structure
+# 2) Make sure all core folders exist
+# 3) Print the structure so you know everything is ready
 # Idea is to make this project easily reproducible 
 
 import os --helps you create folders and navigate the file system.
