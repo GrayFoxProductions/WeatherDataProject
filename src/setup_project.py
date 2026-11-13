@@ -1,3 +1,6 @@
+# This python file simply does the early steps of creating folders in Github.
+# Idea is to make this project easily reproducible 
+
 import os --helps you create folders and navigate the file system.
 from datetime import datetime
 
