@@ -19,7 +19,8 @@ def create_folders():
         "src",
         "database"
     ]
-for folder in folders:
+# Fixed Indentation issue in below for folder line
+    for folder in folders:
         os.makedirs(folder, exist_ok=True)
         print(f"[OK] Folder ready: {folder}")
 def show_structure():
