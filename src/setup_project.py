@@ -4,7 +4,7 @@
 # 3) Print the structure so you know everything is ready
 # Idea is to make this project easily reproducible 
 
-import os --helps you create folders and navigate the file system.
+import os 
 from datetime import datetime
 
 def create_folders():
