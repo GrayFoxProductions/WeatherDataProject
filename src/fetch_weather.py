@@ -8,7 +8,7 @@ import os
 def fetch_weather():
     url = (
         "https://api.open-meteo.com/v1/forecast"
-        "?latitude=47.620422&longitude=-122.349358&hourly=temperature_2m"
+        "?latitude=53.55&longitude=-113.46&hourly=temperature_2m"
     )
     try:
         response = requests.get(url, timeout=10)  # requests.get - The most common Python method for calling APIs.
