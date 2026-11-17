@@ -13,12 +13,17 @@ logging.basicConfig(
 
 def fetch_weather(max_retries=4, initial_delay=2):
     """
-    Fetches weather data from Open-Meteo with built-in retry logic 
-    and exponential backoff for transient network issues or timeouts.
+    Fetches weather data from the updated Open-Meteo endpoint with 
+    built-in retry logic and exponential backoff.
     """
     url = (
         "https://api.open-meteo.com/v1/forecast"
-        "?latitude=47.62&longitude=-122.34&hourly=temperature_2m"
+        "?latitude=47.6062&longitude=-122.3321"
+        "&hourly=temperature_2m"
+        "&timezone=America%2FLos_Angeles"
+        "&wind_speed_unit=mph"
+        "&temperature_unit=fahrenheit"
+        "&precipitation_unit=inch"
     )
     
     for attempt in range(1, max_retries + 1):
