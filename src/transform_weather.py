@@ -3,6 +3,12 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 
+# Updated changes
+# 1) Robust File Sorting: files.sort() sorts alphabetically. If your filenames follow a timestamp format (e.g., weather_2026-03-30.json), this works great. However, if filenames vary, sorting by file modification time using os.path.getmtime is safer.
+# 2) Path Management: Using pathlib instead of os.path provides a more modern, object-oriented way to handle file paths across different operating systems.
+# 3) Logging: Replacing print() statements with Python's built-in logging module will give you better control over log levels (INFO, WARNING, ERROR) and timestamps if this pipeline runs as an automated cron job.
+
+
 def get_latest_bronze_file(bronze_folder="data/bronze"):
     """
     Finds the most recent JSON file in the bronze folder using pathlib.
