@@ -1,102 +1,108 @@
-import requests
 import json
-import logging
-from datetime import datetime
 import os
 import time
+from datetime import datetime
+import requests
 
-# 1. Ensure the 'logs' directory exists in your repo structure
-os.makedirs("logs", exist_ok=True)
+from src.logger import get_logger
 
-# 2. Configure logging to write to both a file (logs/pipeline.log) and the console
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s:%(asctime)s - %(message)s",
-    handlers=[
-        logging.FileHandler("logs/pipeline.log"),  # Saves logs to your repo's log folder
-        logging.StreamHandler()                     # Prints logs to your terminal
-    ]
-)
+logger = get_logger(__name__)
 
-def fetch_weather(max_retries=4, initial_delay=2):
-    """
-    Fetches weather data from Open-Meteo with retry logic, exponential backoff,
-    and structured logging.
-    """
+
+def fetch_weather(
+    latitude: float = 47.6062,
+    longitude: float = -122.3321,
+    max_retries: int = 4,
+    initial_delay: float = 2.0,
+    timeout: float = 10.0,
+) -> dict | None:
+    """Fetch hourly temperature data from Open-Meteo with exponential backoff."""
     url = (
         "https://api.open-meteo.com/v1/forecast"
-        "?latitude=47.6062&longitude=-122.3321"
+        f"?latitude={latitude}&longitude={longitude}"
         "&hourly=temperature_2m"
         "&timezone=America%2FLos_Angeles"
         "&wind_speed_unit=mph"
         "&temperature_unit=fahrenheit"
         "&precipitation_unit=inch"
     )
-    
+
     for attempt in range(1, max_retries + 1):
+        delay = initial_delay * (2 ** (attempt - 1))
+        logger.info("Fetching weather data (attempt %d/%d)", attempt, max_retries)
+
         try:
-            logging.info(f"Fetching weather data (Attempt {attempt}/{max_retries})...")
-            response = requests.get(url, timeout=10)
-            
-            # Raise an exception for HTTP error codes (4xx, 5xx)
+            response = requests.get(url, timeout=timeout)
             response.raise_for_status()
-            
-            return response.json()
-            
+            data = response.json()
+            logger.info("Weather API call successful")
+            return data
+
         except requests.exceptions.Timeout:
-            delay = initial_delay * (2 ** (attempt - 1))  # Exponential backoff
             if attempt == max_retries:
-                logging.error(f"Max retries ({max_retries}) reached. The request timed out permanently.")
+                logger.error("Request timed out after %d attempts", max_retries)
                 break
-            logging.warning(f"Request timed out. Retrying in {delay} seconds...")
+            logger.warning("Request timed out; retrying in %.1fs", delay)
             time.sleep(delay)
-            
-        except requests.exceptions.HTTPError as http_err:
-            status_code = response.status_code if 'response' in locals() else 'Unknown'
-            logging.error(f"HTTP error occurred: {http_err} (Status Code: {status_code})")
-            
-            if 400 <= status_code < 500 and status_code != 429:
+
+        except requests.exceptions.HTTPError as exc:
+            status_code = exc.response.status_code if exc.response is not None else None
+            logger.error("HTTP error: %s (status=%s)", exc, status_code)
+
+            # Do not retry client errors except rate limits (429)
+            if status_code is not None and 400 <= status_code < 500 and status_code != 429:
                 break
-                
-            delay = initial_delay * (2 ** (attempt - 1))
-            if attempt < max_retries:
-                logging.warning(f"Retrying after HTTP error in {delay} seconds...")
-                time.sleep(delay)
-                
-        except requests.exceptions.ConnectionError as conn_err:
-            delay = initial_delay * (2 ** (attempt - 1))
-            logging.warning(f"Connection error ({conn_err}). Retrying in {delay} seconds...")
-            if attempt < max_retries:
-                time.sleep(delay)
-                
-        except requests.exceptions.RequestException as req_err:
-            logging.error(f"An unrecoverable request error occurred: {req_err}")
+
+            if attempt == max_retries:
+                logger.error("HTTP error persisted after %d attempts", max_retries)
+                break
+
+            logger.warning("Retrying after HTTP error in %.1fs", delay)
+            time.sleep(delay)
+
+        except requests.exceptions.ConnectionError as exc:
+            if attempt == max_retries:
+                logger.error("Connection error persisted after %d attempts: %s", max_retries, exc)
+                break
+            logger.warning("Connection error (%s); retrying in %.1fs", exc, delay)
+            time.sleep(delay)
+
+        except requests.exceptions.RequestException as exc:
+            logger.error("Unrecoverable request error: %s", exc)
             break
-            
+
     return None
 
-def save_to_bronze(data):
-    # Make sure the data directory exists
-    os.makedirs("data/bronze", exist_ok=True)
-    
-    filename = datetime.now().strftime("%Y-%m-%d.json")
-    filepath = os.path.join("data/bronze", filename)
-    
-    try:
-        with open(filepath, "w") as f:
-            json.dump(data, f, indent=2)
-        logging.info(f"Raw weather saved successfully to {filepath}")
-    except IOError as e:
-        logging.error(f"Failed to write data to disk: {e}")
 
-def main():
-    logging.info("Starting weather ingestion pipeline...")
+def save_to_bronze(data: dict, base_dir: str = "data/bronze") -> str | None:
+    """Persist raw weather JSON to the bronze layer and return the saved path."""
+    if not data:
+        logger.warning("Skipping bronze save: empty or missing payload")
+        return None
+
+    os.makedirs(base_dir, exist_ok=True)
+    filename = f"{datetime.now().strftime('%Y-%m-%d')}.json"
+    filepath = os.path.join(base_dir, filename)
+
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        logger.info("Saved raw weather JSON to %s", filepath)
+        return filepath
+    except OSError as exc:
+        logger.error("Failed to write weather data to %s: %s", filepath, exc)
+        return None
+
+
+def main() -> None:
+    logger.info("Fetch weather job started")
     weather = fetch_weather()
-    
-    if weather:
-        save_to_bronze(weather)
+
+    if weather and save_to_bronze(weather):
+        logger.info("Fetch weather job finished successfully")
     else:
-        logging.error("Pipeline failed: No data received after all retry attempts.")
+        logger.error("Fetch weather job failed")
+
 
 if __name__ == "__main__":
     main()
